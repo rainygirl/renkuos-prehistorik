@@ -171,7 +171,7 @@ std::string resolveHost(const std::string& dosPath, bool forCreate)
 	return forCreate ? g.gameDir + "/" + base : "";
 }
 
-std::string readAsciiz(uint32_t lin) { std::string s; while (mem[lin] && s.size() < 128) s.push_back(char(mem[lin++])); return s; }
+std::string readAsciiz(uint32_t lin) { std::string s; while (lin < MEM_SIZE && mem[lin] && s.size() < 128) s.push_back(char(mem[lin++])); return s; }
 
 int allocHandle() { for (int i = 5; i < 32; ++i) if (!files[i].open) return i; return -1; }
 
@@ -268,6 +268,7 @@ void dos21()
 			int h = rBX;
 			if (h < 0 || h >= 32 || !files[h].open) { dosError(6); break; }
 			uint32_t src = LIN(rDS, rDX); uint32_t n = rCX;
+			if (src + n > MEM_SIZE) n = MEM_SIZE - src;
 			if (h <= 4) { std::string s(reinterpret_cast<char*>(mem + src), n); logf("game: %s", s.c_str()); rAX = uint16_t(n); dosOk(); break; }
 			ssize_t r = ::write(files[h].fd, mem + src, n);
 			if (r < 0) { dosError(5); break; }
@@ -297,7 +298,7 @@ void dos21()
 			else dosError(1);
 			break;
 		}
-		case 0x09: { uint32_t a = LIN(rDS, rDX); std::string s; while (mem[a] != '$' && s.size() < 512) s.push_back(char(mem[a++])); logf("game: %s", s.c_str()); break; }
+		case 0x09: { uint32_t a = LIN(rDS, rDX); std::string s; while (a < MEM_SIZE && mem[a] != '$' && s.size() < 512) s.push_back(char(mem[a++])); logf("game: %s", s.c_str()); break; }
 		case 0x02: case 0x06: { char c = char(DL); if (ah == 0x02 || c != char(0xff)) logf("game char: %c", c); AL = uint8_t(c); break; }
 		case 0x0B: AL = 0; break;
 		case 0x33: if (AL == 0) DL = 0; break;
@@ -614,11 +615,15 @@ bool loadImage(std::string& error)
 	uint16_t ss = d[14] | (d[15] << 8), sp = d[16] | (d[17] << 8), ip = d[20] | (d[21] << 8), cs = d[22] | (d[23] << 8), reloff = d[24] | (d[25] << 8);
 	size_t size = lastPage ? (pages - 1) * 512 + lastPage : pages * 512;
 	if (size > d.size()) size = d.size();
+	if (hdr > size || size_t(reloff) + size_t(nreloc) * 4 > d.size()) { error = "corrupt MZ header"; return false; }
+	size_t image = size - hdr;
+	if (image > MEM_SIZE - (kLoadSeg << 4)) image = MEM_SIZE - (kLoadSeg << 4);
 	memset(mem, 0, sizeof mem);
-	memcpy(mem + (kLoadSeg << 4), d.data() + hdr, size - hdr);
+	memcpy(mem + (kLoadSeg << 4), d.data() + hdr, image);
 	for (int i = 0; i < nreloc; ++i) {
 		uint16_t o = d[reloff + i * 4] | (d[reloff + i * 4 + 1] << 8), s = d[reloff + i * 4 + 2] | (d[reloff + i * 4 + 3] << 8);
 		uint32_t a = (kLoadSeg << 4) + s * 16 + o;
+		if (a + 1 >= MEM_SIZE) continue;
 		uint16_t v = uint16_t(mem[a] | (mem[a + 1] << 8)); v = uint16_t(v + kLoadSeg);
 		mem[a] = uint8_t(v); mem[a + 1] = uint8_t(v >> 8);
 	}

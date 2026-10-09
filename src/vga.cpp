@@ -307,9 +307,9 @@ void vga_bios_int10()
 				case 0x07: BH = attrRegs[BL & 0x1f]; break;
 				case 0x09: { uint32_t a = LIN(rES, rDX); for (int i = 0; i < 16; ++i) mem[a + i] = attrRegs[i]; mem[a + 16] = attrRegs[0x11]; break; }
 				case 0x10: { Lock l; dac[BL][0] = DH & 0x3f; dac[BL][1] = CH & 0x3f; dac[BL][2] = CL & 0x3f; dirty = 1; break; }
-				case 0x12: { Lock l; uint32_t a = LIN(rES, rDX); for (int i = 0; i < rCX && BL + i < 256; ++i) { dac[(rBX + i) & 0xff][0] = mem[a + i * 3] & 0x3f; dac[(rBX + i) & 0xff][1] = mem[a + i * 3 + 1] & 0x3f; dac[(rBX + i) & 0xff][2] = mem[a + i * 3 + 2] & 0x3f; } dirty = 1; break; }
+				case 0x12: { Lock l; uint32_t a = LIN(rES, rDX); for (int i = 0; i < rCX && BL + i < 256 && a + i * 3 + 2 < MEM_SIZE; ++i) { dac[(rBX + i) & 0xff][0] = mem[a + i * 3] & 0x3f; dac[(rBX + i) & 0xff][1] = mem[a + i * 3 + 1] & 0x3f; dac[(rBX + i) & 0xff][2] = mem[a + i * 3 + 2] & 0x3f; } dirty = 1; break; }
 				case 0x15: DH = dac[BL][0]; CH = dac[BL][1]; CL = dac[BL][2]; break;
-				case 0x17: { uint32_t a = LIN(rES, rDX); for (int i = 0; i < rCX; ++i) { mem[a + i * 3] = dac[(rBX + i) & 0xff][0]; mem[a + i * 3 + 1] = dac[(rBX + i) & 0xff][1]; mem[a + i * 3 + 2] = dac[(rBX + i) & 0xff][2]; } break; }
+				case 0x17: { uint32_t a = LIN(rES, rDX); for (int i = 0; i < rCX && a + i * 3 + 2 < MEM_SIZE; ++i) { mem[a + i * 3] = dac[(rBX + i) & 0xff][0]; mem[a + i * 3 + 1] = dac[(rBX + i) & 0xff][1]; mem[a + i * 3 + 2] = dac[(rBX + i) & 0xff][2]; } break; }
 				case 0x1A: BL = 0; BH = 0; break;
 				default: tracef("bios: int10 AX=%04x unhandled", rAX); break;
 			}
@@ -325,7 +325,7 @@ void vga_bios_int10()
 		case 0x1B: AL = 0; break;
 		case 0x13: {
 			uint32_t a = LIN(rES, rBP); int row = DH, col = DL;
-			for (int i = 0; i < rCX; ++i) { uint8_t c = mem[a + ((AL & 2) ? i * 2 : i)]; uint8_t at = (AL & 2) ? mem[a + i * 2 + 1] : BL; if (c == 13) { col = 0; continue; } if (c == 10) { row++; continue; } uint32_t d = textCell(row, col); mem[d] = c; mem[d + 1] = at; if (++col >= 80) { col = 0; row++; } }
+			for (int i = 0; i < rCX && row < 25 && a + i * 2 + 1 < MEM_SIZE; ++i) { uint8_t c = mem[a + ((AL & 2) ? i * 2 : i)]; uint8_t at = (AL & 2) ? mem[a + i * 2 + 1] : BL; if (c == 13) { col = 0; continue; } if (c == 10) { row++; continue; } uint32_t d = textCell(row, col); mem[d] = c; mem[d + 1] = at; if (++col >= 80) { col = 0; row++; } }
 			if (AL & 1) wr16(0x450, uint16_t((row << 8) | col));
 			dirty = 1; break;
 		}

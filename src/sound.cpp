@@ -100,7 +100,9 @@ void mix(int16_t* out, int frames)
 BSoundPlayer* player = NULL;
 void fillBuffer(void*, void* buffer, size_t size, const media_raw_audio_format& format)
 {
-	mix(static_cast<int16_t*>(buffer), int(size / (format.channel_count * sizeof(int16_t))));
+	// mix() always writes interleaved 16-bit stereo; never write past the buffer.
+	(void)format;
+	mix(static_cast<int16_t*>(buffer), int(size / (2 * sizeof(int16_t))));
 }
 #else
 volatile bool hostAudioRunning = false;
@@ -215,6 +217,7 @@ void voc_play(uint32_t lin)
 	Lock l;
 	std::vector<uint8_t> samples; double sr = 11025; bool haveRate = false;
 	uint32_t p = lin;
+	if (lin >= MEM_SIZE - 26) return;
 	if (memcmp(mem + lin, "Creative Voice File", 19) == 0) p = lin + (mem[lin + 20] | (mem[lin + 21] << 8));
 	int guard = 0;
 	while (p < MEM_SIZE - 4 && guard++ < 256) {
@@ -231,13 +234,13 @@ void voc_play(uint32_t lin)
 			samples.insert(samples.end(), mem + body, mem + body + len);
 		} else if (type == 3) {
 			uint16_t n = mem[body] | (mem[body + 1] << 8); uint8_t tc = mem[body + 2];
-			double r = 1000000.0 / (256 - tc); size_t cnt = size_t(n * (haveRate ? sr / r : 1));
+			double r = 1000000.0 / (256 - tc); double c = n * (haveRate ? sr / r : 1); size_t cnt = c < MEM_SIZE ? size_t(c) : MEM_SIZE;
 			samples.insert(samples.end(), cnt, 0x80);
 		} else if (type == 9) {
 			uint32_t r = mem[body] | (mem[body + 1] << 8) | (uint32_t(mem[body + 2]) << 16) | (uint32_t(mem[body + 3]) << 24);
 			uint8_t bits = mem[body + 4], ch = mem[body + 5];
 			if (!haveRate) { sr = r; haveRate = true; }
-			if (bits == 8 && ch == 1) samples.insert(samples.end(), mem + body + 12, mem + body + len);
+			if (bits == 8 && ch == 1 && len >= 12) samples.insert(samples.end(), mem + body + 12, mem + body + len);
 		}
 		p = body + len;
 	}

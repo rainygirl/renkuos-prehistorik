@@ -126,7 +126,7 @@ static inline void imul16(uint16_t b) { int32_t r = (int32_t)(int16_t)rAX * (int
 static inline void div8(uint8_t b) { if (!b) { div_zero(); return; } uint16_t n = rAX; uint16_t q = n / b; if (q > 0xff) { div_zero(); return; } AL = (uint8_t)q; AH = (uint8_t)(n % b); }
 static inline void div16(uint16_t b) { if (!b) { div_zero(); return; } uint32_t n = ((uint32_t)rDX << 16) | rAX; uint32_t q = n / b; if (q > 0xffff) { div_zero(); return; } rAX = (uint16_t)q; rDX = (uint16_t)(n % b); }
 static inline void idiv8(uint8_t b) { if (!b) { div_zero(); return; } int16_t n = (int16_t)rAX; int16_t q = n / (int8_t)b; if (q != (int8_t)q) { div_zero(); return; } AL = (uint8_t)q; AH = (uint8_t)(n % (int8_t)b); }
-static inline void idiv16(uint16_t b) { if (!b) { div_zero(); return; } int32_t n = (int32_t)(((uint32_t)rDX << 16) | rAX); int32_t q = n / (int16_t)b; if (q != (int16_t)q) { div_zero(); return; } rAX = (uint16_t)q; rDX = (uint16_t)(n % (int16_t)b); }
+static inline void idiv16(uint16_t b) { if (!b) { div_zero(); return; } int64_t n = (int32_t)(((uint32_t)rDX << 16) | rAX); int64_t q = n / (int16_t)b; if (q != (int16_t)q) { div_zero(); return; } rAX = (uint16_t)q; rDX = (uint16_t)(n % (int16_t)b); }
 
 /* ---- string helpers: dir = +1/-1 already applied by caller via fDF ---- */
 #define SDIR(n) (fDF ? (uint16_t)(0 - (n)) : (uint16_t)(n))
