@@ -29,7 +29,7 @@ else derived from the game are generated on your machine from your files.
 ## 1. Get the source
 
 ```sh
-git clone https://github.com/rainygirl/haiku-prehistorik.git
+git clone https://github.com/rainygirl/renkuos-prehistorik.git
 cd haiku-prehistorik
 ```
 

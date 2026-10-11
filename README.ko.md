@@ -27,7 +27,7 @@ DOS 게임 *Prehistorik*(Titus, 1991)을 Haiku에서 네이티브로 실행하�
 ## 1. 소스 받기
 
 ```sh
-git clone https://github.com/rainygirl/haiku-prehistorik.git
+git clone https://github.com/rainygirl/renkuos-prehistorik.git
 cd haiku-prehistorik
 ```
 
