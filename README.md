@@ -116,4 +116,7 @@ illustrate this port.
 
 ---
 
-This port was developed with AI assistance (Claude by Anthropic).
+## AI disclosure
+
+Parts of this port were developed with the assistance of AI coding tools
+(Anthropic's Claude). All code has been reviewed and tested by the author.

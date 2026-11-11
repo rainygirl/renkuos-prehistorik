@@ -110,4 +110,7 @@ prehistorik --setup
 
 ---
 
-이 포팅은 AI(Anthropic의 Claude)의 도움을 받아 개발되었습니다.
+## AI 사용 고지
+
+이 포팅의 일부는 AI 코딩 도구(Anthropic Claude)의 도움을 받아 개발했습니다.
+모든 코드는 작성자가 검토하고 테스트했습니다.
